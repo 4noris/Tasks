@@ -123,7 +123,7 @@ dialog p{margin:0 0 18px;color:var(--dim);font-size:14px}
   <div class="hd">
     <h1>Tasks</h1>
     <div class="tools">
-      <button class="ib" id="bell" type="button" aria-label="Enable alerts">🔔</button>
+      <button class="ib" id="clkb" type="button" aria-label="Show or hide clock">◷</button><button class="ib" id="bell" type="button" aria-label="Enable alerts">🔔</button>
       <button class="ib" id="dat" type="button" aria-label="Export or import">⇅</button>
       <button class="ib" id="thm" type="button" aria-label="Toggle theme">◐</button>
     </div>
@@ -190,7 +190,7 @@ function sched(k,t){if(!t.time)return null;var d=start(k,0),p=t.time.split(":");
 function norm(d){
   d.tasks=(d.tasks||[]).map(function(t){return {id:t.id||nid(),title:String(t.title||""),status:ok(t.status)?t.status:"pending",due:t.due||"",pri:t.pri||"med",tag:t.tag||"",notes:t.notes||"",open:false,fired:!!t.fired}});
   ["daily","weekly"].forEach(function(k){d[k]=(d[k]||[]).map(function(t){return {id:t.id||nid(),title:String(t.title||""),done:t.done||"",time:t.time||"",wd:+t.wd||0,streak:t.streak||0,last:t.last||"",lf:t.lf||"",snz:t.snz||0}})});
-  d.log=d.log||{};d.timers=d.timers||[];d.theme=d.theme||"";return d}
+  d.log=d.log||{};d.timers=d.timers||[];d.theme=d.theme||"";d.noclk=!!d.noclk;return d}
 function load(){
   try{var r=JSON.parse(localStorage.getItem(KEY));if(r&&Array.isArray(r.tasks))return norm(r)}catch(e){}
   var d={tasks:[],daily:[],weekly:[]};
@@ -357,17 +357,19 @@ $("f-timer").onsubmit=function(e){e.preventDefault();var i=e.target.querySelecto
 function bellLabel(){var s="Notification" in window?Notification.permission:"denied";$("bell").style.opacity=s==="granted"?1:.5}
 $("bell").onclick=function(){ctx();try{Notification.requestPermission().then(bellLabel)}catch(e){}};
 function theme(t){D.theme=t;document.documentElement.setAttribute("data-theme",t)}
+function setClk(){$("clk").style.display=D.noclk?"none":"";$("clkb").style.opacity=D.noclk?.5:1}
+$("clkb").onclick=function(){D.noclk=!D.noclk;setClk();save()};
 $("thm").onclick=function(){theme(D.theme==="light"?"dark":"light");save()};
 $("dat").onclick=function(){$("data-t").value=JSON.stringify(D,null,1);$("d-msg").textContent="";$("data").showModal()};
 $("d-x").onclick=function(){$("data").close()};
 $("d-copy").onclick=function(){var t=$("data-t");t.select();try{navigator.clipboard.writeText(t.value);$("d-msg").textContent="Copied."}catch(e){document.execCommand&&document.execCommand("copy");$("d-msg").textContent="Selected, press copy."}};
-$("d-imp").onclick=function(){try{var r=JSON.parse($("data-t").value);if(!r||!Array.isArray(r.tasks))throw 0;D=norm(r);theme(D.theme||D.theme);save();all();$("data").close()}catch(e){$("d-msg").textContent="That is not valid backup data."}};
+$("d-imp").onclick=function(){try{var r=JSON.parse($("data-t").value);if(!r||!Array.isArray(r.tasks))throw 0;D=norm(r);theme(D.theme||D.theme);setClk();save();all();$("data").close()}catch(e){$("d-msg").textContent="That is not valid backup data."}};
 document.addEventListener("keydown",function(e){
   var t=e.target.tagName;if(/INPUT|TEXTAREA|SELECT/.test(t)||e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.key==="n"||e.key==="N"){e.preventDefault();$("n").focus()}else if(e.key==="/"){e.preventDefault();$("q").focus()}});
 document.addEventListener("pointerdown",ctx,{once:true});
 D=load();theme(D.theme||(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"));
-bellLabel();all();tick();setInterval(tick,1000);
+bellLabel();setClk();all();tick();setInterval(tick,1000);
 })();
 </script>
 </body>
